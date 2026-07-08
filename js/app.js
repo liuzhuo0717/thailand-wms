@@ -489,6 +489,11 @@ function renderRequests(el) {
   data = sortArray(data, st.sortCol, st.sortDir);
   const pg = paginate(data, st.curPage);
 
+  // Count by status for tabs
+  const allData = Auth.isRRM() ? getStore(DB.REQUESTS).filter(r => r.region === Auth.getRegion()) : getStore(DB.REQUESTS);
+  const counts = { ALL: allData.length, PENDING: 0, APPROVED: 0, DONE: 0, REJECTED: 0 };
+  allData.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
+
   const cols = [
     { key: 'requestId', label: 'Request ID' }, { key: 'requestedDate', label: 'Requested date' },
     { key: 'region', label: 'Region' }, { key: 'channelName', label: 'Channel Name' },
@@ -504,9 +509,20 @@ function renderRequests(el) {
   if (Auth.isAdmin()) cols.push({ key: '_actions', label: 'Actions' });
 
   let html = '<div class="page-header"><h1>Material Requests</h1><div class="header-actions"><button class="btn btn-outline" onclick="exportRequestsCSV()">Export CSV</button><button class="btn btn-primary" onclick="showAddRequest()">+ New Request</button></div></div>';
-  html += '<div class="filter-bar"><input class="input" placeholder="Search..." value="' + esc(st.search) + '" oninput="onReqSearch(this.value)">';
-  html += '<select class="input" onchange="onReqFilterStatus(this.value)"><option value="">All Status</option>' + ['PENDING', 'APPROVED', 'DONE', 'REJECTED'].map(s => '<option value="' + s + '"' + (st.filterStatus === s ? ' selected' : '') + '>' + s + '</option>').join('') + '</select>';
-  html += '<span class="filter-count">' + data.length + ' requests</span></div>';
+
+  // Status tabs
+  const activeTab = st.filterStatus || 'ALL';
+  const tabs = ['ALL', 'PENDING', 'APPROVED', 'DONE', 'REJECTED'];
+  html += '<div class="status-tabs">';
+  tabs.forEach(tab => {
+    const isActive = activeTab === tab ? ' active' : '';
+    const tabClass = tab === 'ALL' ? 'all' : tab.toLowerCase();
+    html += '<button class="status-tab status-tab-' + tabClass + isActive + '" onclick="onReqFilterStatus(\'' + (tab === 'ALL' ? '' : tab) + '\')">' + tab + ' <span class="tab-count">' + counts[tab] + '</span></button>';
+  });
+  html += '</div>';
+
+  html += '<div class="filter-bar"><input class="input" placeholder="Search by ID, Region, Shop, Item..." value="' + esc(st.search) + '" oninput="onReqSearch(this.value)">';
+  html += '<span class="filter-count">' + data.length + ' requests</span></div>';}
 
   // Build table with approval badges
   html += '<div class="table-wrap table-scroll" id="tbl-requests"><div class="tbl-header tbl-row">';
