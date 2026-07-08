@@ -57,6 +57,25 @@ input, select, textarea, button { font-family: inherit; font-size: inherit; }
 .filter-group .input { min-width: 140px; }
 .filter-count { font-size: 12px; color: #888; margin-left: auto; align-self: flex-end; padding-bottom: 4px; }
 
+/* ---- Detail Card ---- */
+.detail-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 16px; border: 2px solid #FF6900; animation: slideDown 0.2s ease; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+.detail-card-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #eee; background: #FFF5EE; border-radius: 12px 12px 0 0; }
+.detail-card-title { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; }
+.detail-card-id { color: #FF6900; font-family: monospace; font-size: 14px; }
+.detail-card-body { padding: 20px; }
+.detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.detail-item { display: flex; flex-direction: column; gap: 2px; }
+.detail-item-full { grid-column: 1 / -1; }
+.detail-label { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+.detail-value { font-size: 14px; color: #1a1a1a; font-weight: 500; }
+.detail-approvals { display: flex; gap: 16px; padding: 16px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee; margin-bottom: 16px; flex-wrap: wrap; }
+.detail-approval-item { display: flex; flex-direction: column; gap: 6px; min-width: 160px; }
+.detail-approval-item .input-sm { padding: 6px 10px; font-size: 12px; }
+.detail-actions { display: flex; gap: 10px; }
+.tbl-row-selected { background: #FFF5EE !important; }
+.tbl-row-selected .tbl-cell { border-bottom-color: #FFE0CC; }
+
 /* ---- Status Tabs ---- */
 .status-tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
 .status-tab { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; border: 1px solid #e0e0e0; background: #fff; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; color: #666; }

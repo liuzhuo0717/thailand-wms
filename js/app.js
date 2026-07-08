@@ -5,6 +5,7 @@
 // ---- State ----
 let currentPage = 'dashboard';
 let currentModal = null;
+let selectedRequestId = null; // For inline detail card
 let tableState = {}; // { page: { sortCol, sortDir, search, filterType, filterPart, page: num } }
 
 // ---- Utilities ----
@@ -554,6 +555,46 @@ function renderRequests(el) {
     if (toEl) toEl.addEventListener('change', e => { getTableState('requests').filterDateTo = e.target.value; getTableState('requests').curPage = 1; renderPage(); });
   }, 0);
 
+  // Inline detail card for selected request
+  const selectedReq = selectedRequestId ? getStore(DB.REQUESTS).find(r => r.requestId === selectedRequestId) : null;
+  if (selectedReq) {
+    html += '<div class="detail-card" id="req-detail-card">';
+    html += '<div class="detail-card-header">';
+    html += '<div class="detail-card-title"><span class="detail-card-id">' + esc(selectedReq.requestId) + '</span> ' + badge(selectedReq.status) + '</div>';
+    html += '<button class="btn btn-sm btn-outline" onclick="closeDetailCard()">✕ Close</button>';
+    html += '</div>';
+    html += '<div class="detail-card-body">';
+    html += '<div class="detail-grid">';
+    html += '<div class="detail-item"><span class="detail-label">Region</span><span class="detail-value">' + esc(selectedReq.region) + '</span></div>';
+    html += '<div class="detail-item"><span class="detail-label">Channel</span><span class="detail-value">' + esc(selectedReq.channelName) + '</span></div>';
+    html += '<div class="detail-item"><span class="detail-label">Shop</span><span class="detail-value">' + esc(selectedReq.shopName) + ' (' + esc(selectedReq.shopCode) + ')</span></div>';
+    html += '<div class="detail-item"><span class="detail-label">Province</span><span class="detail-value">' + esc(selectedReq.province) + '</span></div>';
+    html += '<div class="detail-item"><span class="detail-label">Shopping Mall</span><span class="detail-value">' + esc(selectedReq.shoppingMall) + '</span></div>';
+    html += '<div class="detail-item"><span class="detail-label">RM Name</span><span class="detail-value">' + esc(selectedReq.rmName) + '</span></div>';
+    html += '<div class="detail-item"><span class="detail-label">Receiver</span><span class="detail-value">' + esc(selectedReq.receiverName) + ' / ' + esc(selectedReq.contactNumber) + '</span></div>';
+    html += '<div class="detail-item"><span class="detail-label">Code</span><span class="detail-value">' + esc(selectedReq.code) + '</span></div>';
+    html += '<div class="detail-item"><span class="detail-label">Item Name</span><span class="detail-value">' + esc(selectedReq.itemName) + '</span></div>';
+    html += '<div class="detail-item"><span class="detail-label">Qty</span><span class="detail-value">' + selectedReq.qty + '</span></div>';
+    html += '<div class="detail-item"><span class="detail-label">Support</span><span class="detail-value">' + esc(selectedReq.support || '-') + '</span></div>';
+    html += '<div class="detail-item"><span class="detail-label">Part</span><span class="detail-value">' + esc(selectedReq.part) + '</span></div>';
+    if (selectedReq.address) html += '<div class="detail-item detail-item-full"><span class="detail-label">Address</span><span class="detail-value">' + esc(selectedReq.address) + '</span></div>';
+    html += '</div>';
+    // Approval section
+    html += '<div class="detail-approvals">';
+    html += '<div class="detail-approval-item"><span class="detail-label">AIOT Approval</span>' + (Auth.isAdmin() ? '<select class="input input-sm" onchange="updateApproval(\'' + selectedReq.requestId + '\',\'aiot\',this.value)">' + ['-', 'PENDING', 'APPROVED', 'REJECTED'].map(s => '<option value="' + s + '"' + (selectedReq.aiotApproval === s ? ' selected' : '') + '>' + s + '</option>').join('') + '</select>' : badge(selectedReq.aiotApproval)) + '</div>';
+    html += '<div class="detail-approval-item"><span class="detail-label">Retail Approval</span>' + (Auth.isAdmin() ? '<select class="input input-sm" onchange="updateApproval(\'' + selectedReq.requestId + '\',\'retail\',this.value)">' + ['-', 'PENDING', 'APPROVED', 'REJECTED'].map(s => '<option value="' + s + '"' + (selectedReq.retailApproval === s ? ' selected' : '') + '>' + s + '</option>').join('') + '</select>' : badge(selectedReq.retailApproval)) + '</div>';
+    html += '<div class="detail-approval-item"><span class="detail-label">Shop con Approval</span>' + (Auth.isAdmin() ? '<select class="input input-sm" onchange="updateApproval(\'' + selectedReq.requestId + '\',\'shopcon\',this.value)">' + ['-', 'PENDING', 'APPROVED', 'REJECTED'].map(s => '<option value="' + s + '"' + (selectedReq.shopConApproval === s ? ' selected' : '') + '>' + s + '</option>').join('') + '</select>' : badge(selectedReq.shopConApproval)) + '</div>';
+    html += '</div>';
+    // Actions
+    if (Auth.isAdmin()) {
+      html += '<div class="detail-actions">';
+      if (selectedReq.status !== 'DONE') html += '<button class="btn btn-primary" onclick="markDone(\'' + selectedReq.requestId + '\')">✓ Mark Done</button>';
+      html += '<button class="btn btn-danger" onclick="deleteRequest(\'' + selectedReq.requestId + '\')">Delete</button>';
+      html += '</div>';
+    }
+    html += '</div></div>';
+  }
+
   // Build table with approval badges
   html += '<div class="table-wrap table-scroll" id="tbl-requests"><div class="tbl-header tbl-row">';
   cols.forEach(c => {
@@ -564,7 +605,8 @@ function renderRequests(el) {
   html += '</div><div class="tbl-body">';
   if (pg.items.length === 0) html += '<div class="tbl-row tbl-empty"><div class="tbl-cell" style="text-align:center;grid-column:1/-1">No requests</div></div>';
   pg.items.forEach(r => {
-    html += '<div class="tbl-row">';
+    const isSelected = r.requestId === selectedRequestId;
+    html += '<div class="tbl-row' + (isSelected ? ' tbl-row-selected' : '') + '" onclick="selectRequest(\'' + r.requestId + '\')" style="cursor:pointer">';
     [r.requestId, r.requestedDate, r.region, r.channelName, r.shopCode, r.shopName, r.province, r.shoppingMall, r.rmName, r.receiverName, r.contactNumber, r.code, r.itemName, r.qty, r.support, r.part].forEach((v, i) => {
       html += '<div class="tbl-cell" data-col="' + i + '">' + esc(String(v ?? '-')) + '</div>';
     });
@@ -573,8 +615,8 @@ function renderRequests(el) {
     html += '<div class="tbl-cell">' + badge(r.shopConApproval) + '</div>';
     html += '<div class="tbl-cell">' + badge(r.status) + '</div>';
     if (Auth.isAdmin()) {
-      html += '<div class="tbl-cell"><button class="btn btn-sm btn-outline" onclick=\'showApproveRequest("' + r.requestId + '")\'>Review</button>';
-      if (r.status !== 'DONE') html += ' <button class="btn btn-sm btn-primary" onclick=\'markDone("' + r.requestId + '")\'>Done</button>';
+      html += '<div class="tbl-cell"><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showApproveRequest(\'' + r.requestId + '\')">Review</button>';
+      if (r.status !== 'DONE') html += ' <button class="btn btn-sm btn-primary" onclick="event.stopPropagation();markDone(\'' + r.requestId + '\')">Done</button>';
       html += '</div>';
     }
     html += '</div>';
@@ -585,6 +627,36 @@ function renderRequests(el) {
 }
 
 function onReqFilterStatus(v) { getTableState('requests').filterStatus = v; getTableState('requests').curPage = 1; renderPage(); }
+function selectRequest(requestId) {
+  selectedRequestId = selectedRequestId === requestId ? null : requestId;
+  renderPage();
+}
+function closeDetailCard() {
+  selectedRequestId = null;
+  renderPage();
+}
+function updateApproval(requestId, type, value) {
+  const reqs = getStore(DB.REQUESTS);
+  const req = reqs.find(r => r.requestId === requestId);
+  if (!req) return;
+  if (type === 'aiot') req.aiotApproval = value;
+  else if (type === 'retail') req.retailApproval = value;
+  else if (type === 'shopcon') req.shopConApproval = value;
+  // Auto-update status based on approvals
+  const allApprovals = [req.aiotApproval, req.retailApproval, req.shopConApproval];
+  if (allApprovals.every(a => a === 'APPROVED')) req.status = 'APPROVED';
+  else if (allApprovals.some(a => a === 'REJECTED')) req.status = 'REJECTED';
+  setStore(DB.REQUESTS, reqs);
+  toast('Approval updated');
+  renderPage();
+}
+function deleteRequest(requestId) {
+  if (!confirm('Delete this request?')) return;
+  setStore(DB.REQUESTS, getStore(DB.REQUESTS).filter(r => r.requestId !== requestId));
+  selectedRequestId = null;
+  toast('Request deleted');
+  renderPage();
+}
 function clearReqFilters() {
   const st = getTableState('requests');
   st.search = ''; st.filterRegion = ''; st.filterDateFrom = ''; st.filterDateTo = ''; st.filterStatus = ''; st.curPage = 1;
