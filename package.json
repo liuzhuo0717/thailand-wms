@@ -1,0 +1,8 @@
+{
+  "name": "thailand-wms",
+  "version": "1.0.0",
+  "description": "Xiaomi Thailand Warehouse Management System",
+  "scripts": {
+    "deploy": "surge . thwarehouse.surge.sh"
+  }
+}
