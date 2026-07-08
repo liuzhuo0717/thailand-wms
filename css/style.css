@@ -51,7 +51,11 @@ input, select, textarea, button { font-family: inherit; font-size: inherit; }
 
 /* ---- Filter Bar ---- */
 .filter-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
-.filter-count { font-size: 12px; color: #888; margin-left: auto; }
+.filter-bar-multi { background: #fff; padding: 16px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); gap: 12px; }
+.filter-group { display: flex; flex-direction: column; gap: 4px; }
+.filter-label { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+.filter-group .input { min-width: 140px; }
+.filter-count { font-size: 12px; color: #888; margin-left: auto; align-self: flex-end; padding-bottom: 4px; }
 
 /* ---- Status Tabs ---- */
 .status-tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }

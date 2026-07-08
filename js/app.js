@@ -486,6 +486,9 @@ function renderRequests(el) {
     data = data.filter(r => [r.requestId, r.region, r.channelName, r.shopName, r.itemName, r.rmName, r.receiverName, r.code].some(f => String(f).toLowerCase().includes(q)));
   }
   if (st.filterStatus) data = data.filter(r => r.status === st.filterStatus);
+  if (st.filterRegion) data = data.filter(r => r.region === st.filterRegion);
+  if (st.filterDateFrom) data = data.filter(r => r.requestedDate >= st.filterDateFrom);
+  if (st.filterDateTo) data = data.filter(r => r.requestedDate <= st.filterDateTo);
   data = sortArray(data, st.sortCol, st.sortDir);
   const pg = paginate(data, st.curPage);
 
@@ -521,8 +524,28 @@ function renderRequests(el) {
   });
   html += '</div>';
 
-  html += '<div class="filter-bar"><input class="input" placeholder="Search by ID, Region, Shop, Item..." value="' + esc(st.search) + '" oninput="onReqSearch(this.value)">';
-  html += '<span class="filter-count">' + data.length + ' requests</span></div>';
+  // Filter bar with multiple conditions
+  const regionOptions = Auth.isAdmin() ? REGIONS : [Auth.getRegion()];
+  html += '<div class="filter-bar filter-bar-multi">';
+  html += '<div class="filter-group"><label class="filter-label">Search</label><input class="input" id="req-search" placeholder="ID, Shop, Item..." value="' + esc(st.search || '') + '"></div>';
+  html += '<div class="filter-group"><label class="filter-label">Region</label><select class="input" id="req-filter-region"><option value="">All Regions</option>' + regionOptions.map(r => '<option value="' + esc(r) + '"' + (st.filterRegion === r ? ' selected' : '') + '>' + r + '</option>').join('') + '</select></div>';
+  html += '<div class="filter-group"><label class="filter-label">From</label><input class="input" type="date" id="req-filter-from" value="' + (st.filterDateFrom || '') + '"></div>';
+  html += '<div class="filter-group"><label class="filter-label">To</label><input class="input" type="date" id="req-filter-to" value="' + (st.filterDateTo || '') + '"></div>';
+  html += '<button class="btn btn-outline btn-sm" onclick="clearReqFilters()">Clear Filters</button>';
+  html += '<span class="filter-count">' + data.length + ' requests</span>';
+  html += '</div>';
+
+  // Add event listeners after render
+  setTimeout(() => {
+    const searchEl = document.getElementById('req-search');
+    const regionEl = document.getElementById('req-filter-region');
+    const fromEl = document.getElementById('req-filter-from');
+    const toEl = document.getElementById('req-filter-to');
+    if (searchEl) searchEl.addEventListener('input', debounce(e => { getTableState('requests').search = e.target.value; getTableState('requests').curPage = 1; renderTableOnly(); }, 300));
+    if (regionEl) regionEl.addEventListener('change', e => { getTableState('requests').filterRegion = e.target.value; getTableState('requests').curPage = 1; renderPage(); });
+    if (fromEl) fromEl.addEventListener('change', e => { getTableState('requests').filterDateFrom = e.target.value; getTableState('requests').curPage = 1; renderPage(); });
+    if (toEl) toEl.addEventListener('change', e => { getTableState('requests').filterDateTo = e.target.value; getTableState('requests').curPage = 1; renderPage(); });
+  }, 0);
 
   // Build table with approval badges
   html += '<div class="table-wrap table-scroll" id="tbl-requests"><div class="tbl-header tbl-row">';
@@ -554,8 +577,24 @@ function renderRequests(el) {
   el.innerHTML = html;
 }
 
-function onReqSearch(v) { getTableState('requests').search = v; getTableState('requests').curPage = 1; renderPage(); }
 function onReqFilterStatus(v) { getTableState('requests').filterStatus = v; getTableState('requests').curPage = 1; renderPage(); }
+function clearReqFilters() {
+  const st = getTableState('requests');
+  st.search = ''; st.filterRegion = ''; st.filterDateFrom = ''; st.filterDateTo = ''; st.filterStatus = ''; st.curPage = 1;
+  renderPage();
+}
+function renderTableOnly() {
+  const el = document.getElementById('page-requests');
+  if (el) renderRequests(el);
+}
+// Debounce utility
+function debounce(fn, delay) {
+  let timer;
+  return function(...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
 function onReqSort(col) {
   const st = getTableState('requests');
   if (st.sortCol === col) st.sortDir = st.sortDir === 'asc' ? 'desc' : 'asc';
