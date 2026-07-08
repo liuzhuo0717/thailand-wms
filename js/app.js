@@ -522,7 +522,7 @@ function renderRequests(el) {
   html += '</div>';
 
   html += '<div class="filter-bar"><input class="input" placeholder="Search by ID, Region, Shop, Item..." value="' + esc(st.search) + '" oninput="onReqSearch(this.value)">';
-  html += '<span class="filter-count">' + data.length + ' requests</span></div>';}
+  html += '<span class="filter-count">' + data.length + ' requests</span></div>';
 
   // Build table with approval badges
   html += '<div class="table-wrap table-scroll" id="tbl-requests"><div class="tbl-header tbl-row">';
