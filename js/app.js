@@ -11,6 +11,7 @@ let tableState = {}; // { page: { sortCol, sortDir, search, filterType, filterPa
 function $(sel, ctx) { return (ctx || document).querySelector(sel); }
 function $$(sel, ctx) { return [...(ctx || document).querySelectorAll(sel)]; }
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function debounce(fn, delay) { let timer; return function(...args) { clearTimeout(timer); timer = setTimeout(() => fn.apply(this, args), delay); }; }
 
 function toast(msg, type) {
   const t = document.createElement('div');
@@ -242,7 +243,7 @@ function renderInventory(el) {
 
   let html = '<div class="page-header"><h1>Total Inventory</h1><div class="header-actions"><button class="btn btn-outline" onclick="exportInventoryCSV()">Export CSV</button>' + (Auth.isAdmin() ? '<button class="btn btn-primary" onclick="showAddInventory()">+ Add Item</button>' : '') + '</div></div>';
   // Filters
-  html += '<div class="filter-bar"><input class="input" id="inv-search" placeholder="Search..." value="' + esc(st.search) + '" oninput="onInvSearch(this.value)">';
+  html += '<div class="filter-bar"><input class="input" id="inv-search" placeholder="Search..." value="' + esc(st.search) + '">';
   html += '<select class="input" id="inv-filter-type" onchange="onInvFilterType(this.value)"><option value="">All Types</option>' + types.map(t => '<option value="' + esc(t) + '"' + (st.filterType === t ? ' selected' : '') + '>' + esc(t) + '</option>').join('') + '</select>';
   html += '<select class="input" id="inv-filter-part" onchange="onInvFilterPart(this.value)"><option value="">All Parts</option>' + parts.map(p => '<option value="' + esc(p) + '"' + (st.filterPart === p ? ' selected' : '') + '>' + esc(p) + '</option>').join('') + '</select>';
   html += '<span class="filter-count">' + data.length + ' items</span></div>';
@@ -283,6 +284,9 @@ function renderInventory(el) {
   // Pagination
   html += renderPagination('inventory', pg);
   el.innerHTML = html;
+  // Attach debounced search listener
+  const searchEl = document.getElementById('inv-search');
+  if (searchEl) searchEl.addEventListener('input', debounce(e => { getTableState('inventory').search = e.target.value; getTableState('inventory').curPage = 1; renderPage(); }, 300));
 }
 
 function onInvSearch(v) { getTableState('inventory').search = v; getTableState('inventory').curPage = 1; renderPage(); }
@@ -402,7 +406,7 @@ function renderInbound(el) {
   if (Auth.isAdmin()) cols.push({ key: '_actions', label: 'Actions' });
 
   let html = '<div class="page-header"><h1>Inbound Management</h1><div class="header-actions"><button class="btn btn-outline" onclick="exportInboundCSV()">Export CSV</button>' + (Auth.isAdmin() ? '<button class="btn btn-primary" onclick="showAddInbound()">+ Add Inbound</button>' : '') + '</div></div>';
-  html += '<div class="filter-bar"><input class="input" placeholder="Search..." value="' + esc(st.search) + '" oninput="onInboundSearch(this.value)"><span class="filter-count">' + data.length + ' records</span></div>';
+  html += '<div class="filter-bar"><input class="input" id="inbound-search" placeholder="Search..." value="' + esc(st.search) + '"><span class="filter-count">' + data.length + ' records</span></div>';
   html += buildSortableTable('inbound', cols, pg, 'onInboundSort');
   // Build rows
   pg.items.forEach(r => {
@@ -414,6 +418,9 @@ function renderInbound(el) {
   html += closeSortableTable();
   html += renderPagination('inbound', pg);
   el.innerHTML = html;
+  // Attach debounced search listener
+  const searchEl = document.getElementById('inbound-search');
+  if (searchEl) searchEl.addEventListener('input', debounce(e => { getTableState('inbound').search = e.target.value; getTableState('inbound').curPage = 1; renderPage(); }, 300));
 }
 
 function deleteInbound(id) {
@@ -586,14 +593,6 @@ function clearReqFilters() {
 function renderTableOnly() {
   const el = document.getElementById('page-requests');
   if (el) renderRequests(el);
-}
-// Debounce utility
-function debounce(fn, delay) {
-  let timer;
-  return function(...args) {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn.apply(this, args), delay);
-  };
 }
 function onReqSort(col) {
   const st = getTableState('requests');
@@ -803,7 +802,7 @@ function renderOffice(el) {
   if (Auth.isAdmin()) cols.push({ key: '_actions', label: 'Actions' });
 
   let html = '<div class="page-header"><h1>🏢 Office</h1><div class="header-actions">' + (Auth.isAdmin() ? '<button class="btn btn-primary" onclick="showAddOffice()">+ Add Request</button>' : '') + '</div></div>';
-  html += '<div class="filter-bar"><input class="input" placeholder="Search..." value="' + esc(st.search) + '" oninput="onOfficeSearch(this.value)"><span class="filter-count">' + data.length + ' records</span></div>';
+  html += '<div class="filter-bar"><input class="input" id="office-search" placeholder="Search..." value="' + esc(st.search) + '"><span class="filter-count">' + data.length + ' records</span></div>';
   html += buildSortableTable('office', cols, pg, 'onOfficeSort');
   pg.items.forEach(r => {
     html += '<div class="tbl-row">';
@@ -816,6 +815,9 @@ function renderOffice(el) {
   html += closeSortableTable();
   html += renderPagination('office', pg);
   el.innerHTML = html;
+  // Attach debounced search listener
+  const searchEl = document.getElementById('office-search');
+  if (searchEl) searchEl.addEventListener('input', debounce(e => { getTableState('office').search = e.target.value; getTableState('office').curPage = 1; renderPage(); }, 300));
 }
 
 function editOffice(id) {
@@ -909,7 +911,7 @@ function renderInvCheck(el) {
   if (Auth.isAdmin()) cols.push({ key: '_actions', label: 'Actions' });
 
   let html = '<div class="page-header"><h1>✅ Inventory Check</h1><div class="header-actions">' + (Auth.isAdmin() ? '<button class="btn btn-primary" onclick="showAddInvCheck()">+ New Check</button>' : '') + '</div></div>';
-  html += '<div class="filter-bar"><input class="input" placeholder="Search..." value="' + esc(st.search) + '" oninput="onCheckSearch(this.value)"><span class="filter-count">' + data.length + ' records</span></div>';
+  html += '<div class="filter-bar"><input class="input" id="check-search" placeholder="Search..." value="' + esc(st.search) + '"><span class="filter-count">' + data.length + ' records</span></div>';
   html += buildSortableTable('inv-check', cols, pg, 'onCheckSort');
   pg.items.forEach(r => {
     const diffClass = r.difference < 0 ? 'color:#dc3545' : (r.difference > 0 ? 'color:#FF6900' : '');
@@ -923,6 +925,9 @@ function renderInvCheck(el) {
   html += closeSortableTable();
   html += renderPagination('inv-check', pg);
   el.innerHTML = html;
+  // Attach debounced search listener
+  const searchEl = document.getElementById('check-search');
+  if (searchEl) searchEl.addEventListener('input', debounce(e => { getTableState('inv-check').search = e.target.value; getTableState('inv-check').curPage = 1; renderPage(); }, 300));
 }
 
 function deleteInvCheck(id) {
